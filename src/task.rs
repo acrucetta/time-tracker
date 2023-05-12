@@ -105,4 +105,15 @@ impl TimeTracker {
         }
         TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
     }
+
+    /// Save all tasks to a csv file
+    pub fn save_tasks_to_csv(&self) -> TimeTrackerResult {
+        // Save tasks to csv
+        TimeTrackerResult::Success
+    }
+
+    pub fn load_tasks_from_csv(&mut self) -> TimeTrackerResult {
+        // Load tasks from csv
+        TimeTrackerResult::Success
+    }
 }
