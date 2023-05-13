@@ -38,9 +38,15 @@ fn main() {
 
     match subcommand {
         "start" => {
-            let task_name = sub_m.get_one::<String>("task").unwrap();
-            let tags = sub_m.get_one::<String>("tags").unwrap();
-            time_tracker.create_task(task_name, tags);
+            let task_name = sub_m.get_one::<String>("TASK").unwrap();
+            match sub_m.get_one::<String>("tags") {
+                Some(tags) => {
+                    time_tracker.create_task(task_name, tags);
+                }
+                None => {
+                    time_tracker.create_task(task_name, "");
+                }
+            }
         }
         "stop" => {
             time_tracker.stop_active_task();
