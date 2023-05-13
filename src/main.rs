@@ -1,7 +1,10 @@
+use std::time;
+
 use clap::{arg, command, Command};
+use tasks::TimeTracker;
 
 mod config;
-mod task;
+mod tasks;
 
 fn main() {
     // Load the config file
@@ -20,6 +23,11 @@ fn main() {
         .subcommand(Command::new("ls").about("List all tasks"))
         .get_matches();
 
+    let mut time_tracker = match TimeTracker::from_file(&config.tasks_path) {
+        Ok(time_tracker) => time_tracker,
+        Err(_) => TimeTracker::new(),
+    };
+
     let subcommand = matches.subcommand();
     let (subcommand, sub_m) = if let Some(subc) = subcommand {
         subc
@@ -30,19 +38,24 @@ fn main() {
 
     match subcommand {
         "start" => {
-            todo!();
+            let task_name = sub_m.get_one::<String>("task").unwrap();
+            let tags = sub_m.get_one::<String>("tags").unwrap();
+            time_tracker.create_task(task_name, tags);
         }
         "stop" => {
-            todo!();
+            time_tracker.stop_active_task();
         }
         "status" => {
-            todo!();
+            time_tracker.show_active_tasks();
         }
         "ls" => {
-            todo!();
+            time_tracker.show_all_tasks();
         }
         otherwise => {
             eprintln!("Unknown subcommand: {}", otherwise);
         }
     }
+
+    // Save the tasks to file
+    TimeTracker::save_to_file(time_tracker, &config.tasks_path).unwrap();
 }
