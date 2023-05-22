@@ -1,5 +1,5 @@
-
 use chrono::{Local, TimeZone};
+use colored::Colorize;
 use std::io;
 use std::{self, fmt};
 
@@ -26,11 +26,22 @@ impl fmt::Display for Task {
     /// Duration: 00:00:00
     /// Energy: 0
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Task: {}", self.name)?;
-        writeln!(f, "Start: {}", self.start_time.format(SHOW_TIME_FORMAT))?;
+        let tags = match &self.tags {
+            Some(tags) => tags.join(","),
+            None => String::from("None"),
+        };
+        writeln!(f, "{}{}", "@".bright_black(), tags.bright_black())?;
+        writeln!(f, "{} {}", "Task:".bright_yellow(), self.name.black())?;
         writeln!(
             f,
-            "End: {}",
+            "{}{}",
+            "Start: ".bright_yellow(),
+            self.start_time.format(SHOW_TIME_FORMAT)
+        )?;
+        writeln!(
+            f,
+            "{}{}",
+            "End: ".bright_yellow(),
             match self.end_time {
                 Some(end_time) => end_time.format(SHOW_TIME_FORMAT).to_string(),
                 None => String::from("In Progress..."),
@@ -38,7 +49,8 @@ impl fmt::Display for Task {
         )?;
         writeln!(
             f,
-            "Duration: {} minutes",
+            "{}: {} minutes",
+            "Duration".bright_yellow(),
             // If the task is in progress, show the duration as the time since the start
             // Otherwise, show the duration as the time between start and end
             match self.end_time {
@@ -46,14 +58,20 @@ impl fmt::Display for Task {
                 None => (chrono::Local::now() - self.start_time).num_minutes(),
             }
         )?;
-        writeln!(f, "Life Energy: {}", self.energy.unwrap_or(0))
+        writeln!(
+            f,
+            "{}: {}",
+            "Life Energy".bright_yellow(),
+            self.energy.unwrap_or(0)
+        )?;
+        Ok(())
     }
 }
 
 impl Task {
     pub fn new() -> Task {
         let curr_time = chrono::Local::now();
-        
+
         Task {
             id: 0,
             name: String::from(""),
