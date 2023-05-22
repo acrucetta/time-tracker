@@ -1,6 +1,10 @@
 use chrono;
 use chrono::{DateTime, Local, TimeZone};
+use std::io;
 use std::{self, fmt, path::Path};
+
+const SAVE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.f %z";
+const SHOW_TIME_FORMAT: &str = "%Y-%m-%d %H:%M";
 
 pub struct Task {
     pub id: u32,
@@ -23,23 +27,36 @@ impl fmt::Display for Task {
     /// Energy: 0
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Task: {}\n", self.name)?;
-        write!(f, "Start: {}\n", self.start_time)?;
+        write!(f, "Start: {}\n", self.start_time.format(SHOW_TIME_FORMAT))?;
         write!(
             f,
             "End: {}\n",
-            self.end_time.unwrap_or(chrono::Local::now())
+            match self.end_time {
+                Some(end_time) => end_time.format(SHOW_TIME_FORMAT).to_string(),
+                None => String::from("In Progress..."),
+            }
         )?;
-        write!(f, "Duration: {}\n", self.duration)?;
+        write!(
+            f,
+            "Duration: {} minutes\n",
+            // If the task is in progress, show the duration as the time since the start
+            // Otherwise, show the duration as the time between start and end
+            match self.end_time {
+                Some(end_time) => (end_time - self.start_time).num_minutes(),
+                None => (chrono::Local::now() - self.start_time).num_minutes(),
+            }
+        )?;
         write!(f, "Energy: {}\n", self.energy.unwrap_or(0))
     }
 }
 
 impl Task {
     pub fn new() -> Task {
+        let curr_time = chrono::Local::now();
         let task = Task {
             id: 0,
             name: String::from(""),
-            start_time: chrono::Local::now(),
+            start_time: curr_time,
             end_time: None,
             duration: chrono::Duration::seconds(0),
             tags: None,
@@ -57,13 +74,18 @@ impl Task {
 
     fn from_record(record: csv::StringRecord) -> Task {
         // Load a task from a CSV record
-        let time_format = "%Y-%m-%d %H:%M:%S";
         let id = record[0].parse::<u32>().unwrap();
         let name = record[1].to_string();
-        let start_time = Local.datetime_from_str(&record[2], time_format).unwrap();
+        let start_time = Local
+            .datetime_from_str(&record[2], SAVE_TIME_FORMAT)
+            .unwrap();
         let end_time = match record[3].is_empty() {
             true => None,
-            false => Some(Local.datetime_from_str(&record[3], time_format).unwrap()),
+            false => Some(
+                Local
+                    .datetime_from_str(&record[3], SAVE_TIME_FORMAT)
+                    .unwrap(),
+            ),
         };
         let duration = if record[4].is_empty() {
             chrono::Duration::seconds(0)
@@ -101,6 +123,21 @@ pub enum TimeTrackerError {
     InvalidTaskEnergy,
     InvalidTaskId,
     NoActiveTasks,
+    TaskAlreadyActive,
+}
+
+impl fmt::Display for TimeTrackerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TimeTrackerError::InvalidTaskName => write!(f, "Invalid task name"),
+            TimeTrackerError::InvalidTaskDuration => write!(f, "Invalid task duration"),
+            TimeTrackerError::InvalidTaskTags => write!(f, "Invalid task tags"),
+            TimeTrackerError::InvalidTaskEnergy => write!(f, "Invalid task energy"),
+            TimeTrackerError::InvalidTaskId => write!(f, "Invalid task id"),
+            TimeTrackerError::NoActiveTasks => write!(f, "No active tasks"),
+            TimeTrackerError::TaskAlreadyActive => write!(f, "Task already active"),
+        }
+    }
 }
 
 pub enum TimeTrackerResult {
@@ -114,10 +151,32 @@ impl TimeTracker {
         TimeTracker { tasks }
     }
 
+    fn check_if_task_is_active(&self) -> bool {
+        // Check if there is an active task
+        for task in self.tasks.iter() {
+            if task.end_time.is_none() {
+                return true;
+            }
+        }
+        false
+    }
+
     pub fn create_task(&mut self, name: &str, tags: &str) -> TimeTrackerResult {
+        // Check if there is an active task
+        if self.check_if_task_is_active() {
+            return TimeTrackerResult::Error(TimeTrackerError::TaskAlreadyActive);
+        }
+
+        // Check the last task id
+        let id = match self.tasks.last() {
+            Some(task) => task.id + 1,
+            None => 1,
+        };
+
         let mut task = Task::new();
         task.name = name.to_string();
         task.tags = Some(tags.split(",").map(|s| s.to_string()).collect());
+        task.id = id;
         self.tasks.push(task);
         TimeTrackerResult::Success
     }
@@ -141,11 +200,23 @@ impl TimeTracker {
         TimeTrackerResult::Success
     }
 
+    fn get_energy_from_user() -> i8 {
+        // Get energy from user
+        let mut energy = String::new();
+        println!("How much life energy did this task give you? (1-10): ");
+        io::stdin()
+            .read_line(&mut energy)
+            .expect("Failed to read line");
+        let energy: i8 = energy.trim().parse().expect("Please type a number!");
+        energy
+    }
+
     pub fn stop_active_task(&mut self) -> TimeTrackerResult {
         // We want to get the last task that has no end time
         for task in self.tasks.iter_mut().rev() {
             if task.end_time.is_none() {
-                task.end_task(0);
+                let energy = TimeTracker::get_energy_from_user();
+                task.end_task(energy);
                 return TimeTrackerResult::Success;
             }
         }
@@ -226,6 +297,9 @@ impl TimeTracker {
 
         for result in rdr.records() {
             let record = result?;
+            if &record[0] == "id" {
+                continue;
+            }
             if record.is_empty() {
                 continue;
             }

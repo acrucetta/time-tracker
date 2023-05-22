@@ -1,7 +1,7 @@
 use std::time;
 
 use clap::{arg, command, Command};
-use tasks::TimeTracker;
+use tasks::{TimeTracker, TimeTrackerResult};
 
 mod config;
 mod tasks;
@@ -39,13 +39,13 @@ fn main() {
     match subcommand {
         "start" => {
             let task_name = sub_m.get_one::<String>("TASK").unwrap();
-            match sub_m.get_one::<String>("tags") {
-                Some(tags) => {
-                    time_tracker.create_task(task_name, tags);
-                }
-                None => {
-                    time_tracker.create_task(task_name, "");
-                }
+            let tags = match sub_m.get_one::<String>("tags") {
+                Some(tags) => tags,
+                None => "",
+            };
+            match time_tracker.create_task(task_name, &tags) {
+                TimeTrackerResult::Success => print!("Started task: {}", task_name),
+                TimeTrackerResult::Error(e) => eprintln!("Error: {}", e),
             }
         }
         "stop" => {
