@@ -1,7 +1,7 @@
-use chrono;
-use chrono::{DateTime, Local, TimeZone};
+
+use chrono::{Local, TimeZone};
 use std::io;
-use std::{self, fmt, path::Path};
+use std::{self, fmt};
 
 const SAVE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S%.f %z";
 const SHOW_TIME_FORMAT: &str = "%Y-%m-%d %H:%M";
@@ -26,19 +26,19 @@ impl fmt::Display for Task {
     /// Duration: 00:00:00
     /// Energy: 0
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Task: {}\n", self.name)?;
-        write!(f, "Start: {}\n", self.start_time.format(SHOW_TIME_FORMAT))?;
-        write!(
+        writeln!(f, "Task: {}", self.name)?;
+        writeln!(f, "Start: {}", self.start_time.format(SHOW_TIME_FORMAT))?;
+        writeln!(
             f,
-            "End: {}\n",
+            "End: {}",
             match self.end_time {
                 Some(end_time) => end_time.format(SHOW_TIME_FORMAT).to_string(),
                 None => String::from("In Progress..."),
             }
         )?;
-        write!(
+        writeln!(
             f,
-            "Duration: {} minutes\n",
+            "Duration: {} minutes",
             // If the task is in progress, show the duration as the time since the start
             // Otherwise, show the duration as the time between start and end
             match self.end_time {
@@ -46,14 +46,15 @@ impl fmt::Display for Task {
                 None => (chrono::Local::now() - self.start_time).num_minutes(),
             }
         )?;
-        write!(f, "Life Energy: {}\n", self.energy.unwrap_or(0))
+        writeln!(f, "Life Energy: {}", self.energy.unwrap_or(0))
     }
 }
 
 impl Task {
     pub fn new() -> Task {
         let curr_time = chrono::Local::now();
-        let task = Task {
+        
+        Task {
             id: 0,
             name: String::from(""),
             start_time: curr_time,
@@ -61,8 +62,7 @@ impl Task {
             duration: chrono::Duration::seconds(0),
             tags: None,
             energy: None,
-        };
-        task
+        }
     }
 
     pub fn end_task(&mut self, energy: i8) {
@@ -94,7 +94,7 @@ impl Task {
         };
         let tags = match record[5].is_empty() {
             true => None,
-            false => Some(record[5].split(",").map(|s| s.to_string()).collect()),
+            false => Some(record[5].split(',').map(|s| s.to_string()).collect()),
         };
         let energy = match record[6].is_empty() {
             true => None,
@@ -175,7 +175,7 @@ impl TimeTracker {
 
         let mut task = Task::new();
         task.name = name.to_string();
-        task.tags = Some(tags.split(",").map(|s| s.to_string()).collect());
+        task.tags = Some(tags.split(',').map(|s| s.to_string()).collect());
         task.id = id;
         self.tasks.push(task);
         TimeTrackerResult::Success

@@ -1,4 +1,4 @@
-use std::time;
+
 
 use clap::{arg, command, Command};
 use tasks::{TimeTracker, TimeTrackerResult};
@@ -43,7 +43,7 @@ fn main() {
                 Some(tags) => tags,
                 None => "",
             };
-            match time_tracker.create_task(task_name, &tags) {
+            match time_tracker.create_task(task_name, tags) {
                 TimeTrackerResult::Success => print!("Started task: {}", task_name),
                 TimeTrackerResult::Error(e) => eprintln!("Error: {}", e),
             }
