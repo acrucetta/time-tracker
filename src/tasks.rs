@@ -46,7 +46,7 @@ impl fmt::Display for Task {
                 None => (chrono::Local::now() - self.start_time).num_minutes(),
             }
         )?;
-        write!(f, "Energy: {}\n", self.energy.unwrap_or(0))
+        write!(f, "Life Energy: {}\n", self.energy.unwrap_or(0))
     }
 }
 
