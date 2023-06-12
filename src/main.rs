@@ -1,5 +1,3 @@
-
-
 use clap::{arg, command, Command};
 use tasks::{TimeTracker, TimeTrackerResult};
 
@@ -37,7 +35,7 @@ fn main() {
     };
 
     match subcommand {
-        "start" => {
+        "add" => {
             let task_name = sub_m.get_one::<String>("TASK").unwrap();
             let tags = match sub_m.get_one::<String>("tags") {
                 Some(tags) => tags,
