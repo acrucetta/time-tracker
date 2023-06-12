@@ -11,7 +11,7 @@ fn main() {
     let matches = command!()
         .subcommand_required(true)
         .subcommand(
-            Command::new("start")
+            Command::new("add")
                 .about("Start timing a task")
                 .arg(arg!([TASK]))
                 .arg(arg!(--tags[TAGS])),
