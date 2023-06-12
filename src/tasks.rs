@@ -14,6 +14,7 @@ pub struct Task {
     pub duration: chrono::Duration,
     pub tags: Option<Vec<String>>,
     pub energy: Option<i8>, // How much energy did this task give me?
+    pub comments: Option<String>,
 }
 
 impl fmt::Display for Task {
@@ -64,6 +65,12 @@ impl fmt::Display for Task {
             "Life Energy".bright_yellow(),
             self.energy.unwrap_or(0)
         )?;
+        writeln!(
+            f,
+            "{}: {}",
+            "Comments:".bright_yellow(),
+            self.comments.as_ref().unwrap_or(&String::from("None"))
+        )?;
         Ok(())
     }
 }
@@ -80,14 +87,16 @@ impl Task {
             duration: chrono::Duration::seconds(0),
             tags: None,
             energy: None,
+            comments: None,
         }
     }
 
-    pub fn end_task(&mut self, energy: i8) {
+    pub fn end_task(&mut self, energy: i8, comment: String) {
         let now = chrono::Local::now();
         self.end_time = Some(now);
         self.duration = now - self.start_time;
         self.energy = Some(energy);
+        self.comments = Some(comment);
     }
 
     fn from_record(record: csv::StringRecord) -> Task {
@@ -118,6 +127,10 @@ impl Task {
             true => None,
             false => Some(record[6].parse::<i8>().unwrap()),
         };
+        let comments = match record[7].is_empty() {
+            true => None,
+            false => Some(record[7].to_string()),
+        };
         Task {
             id,
             name,
@@ -126,6 +139,7 @@ impl Task {
             duration,
             tags,
             energy,
+            comments,
         }
     }
 }
@@ -229,12 +243,22 @@ impl TimeTracker {
         energy
     }
 
+    fn get_comment_from_user() -> String {
+        let mut comment = String::new();
+        println!("How did the task go?: ");
+        io::stdin()
+            .read_line(&mut comment)
+            .expect("Failed to write comment");
+        comment
+    }
+
     pub fn stop_active_task(&mut self) -> TimeTrackerResult {
         // We want to get the last task that has no end time
         for task in self.tasks.iter_mut().rev() {
             if task.end_time.is_none() {
                 let energy = TimeTracker::get_energy_from_user();
-                task.end_task(energy);
+                let comment = TimeTracker::get_comment_from_user();
+                task.end_task(energy, comment);
                 return TimeTrackerResult::Success;
             }
         }
@@ -270,6 +294,7 @@ impl TimeTracker {
             "duration",
             "tags",
             "energy",
+            "comments",
         ])?;
 
         for task in time_tracker.tasks {
@@ -288,6 +313,10 @@ impl TimeTracker {
                 },
                 match task.energy {
                     Some(e) => e.to_string(),
+                    None => String::from(""),
+                },
+                match task.comments {
+                    Some(c) => c,
                     None => String::from(""),
                 },
             ])?;
