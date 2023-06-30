@@ -1,5 +1,7 @@
 use chrono::{Local, TimeZone};
 use colored::Colorize;
+use enum_iterator::{all, Sequence};
+use num_derive::FromPrimitive;
 use std::io;
 use std::{self, fmt};
 
@@ -17,6 +19,32 @@ pub struct Task {
     pub comments: Option<String>,
 }
 
+#[derive(Debug, FromPrimitive, Sequence)]
+pub enum PredefinedTasks {
+    Work = 1,
+    Meetings = 2,
+    Reading = 3,
+    Journaling = 4,
+    Code = 5,
+    BrowseInternet = 6,
+    Other = 7,
+}
+
+// Add String::from to the predefined tasks
+impl std::fmt::Display for PredefinedTasks {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            PredefinedTasks::Work => write!(f, "{}", "Work"),
+            PredefinedTasks::Meetings => write!(f, "{}", "Meetings"),
+            PredefinedTasks::Reading => write!(f, "{}", "Reading"),
+            PredefinedTasks::Journaling => write!(f, "{}", "Journaling"),
+            PredefinedTasks::Code => write!(f, "{}", "Code"),
+            PredefinedTasks::BrowseInternet => write!(f, "{}", "Browse Internet"),
+            PredefinedTasks::Other => write!(f, "{}", "Other"),
+        }
+    }
+}
+
 impl fmt::Display for Task {
     /// Formats the value using the given formatter.
     ///
@@ -31,7 +59,6 @@ impl fmt::Display for Task {
             Some(tags) => tags.join(","),
             None => String::from("None"),
         };
-        writeln!(f, "{}{}", "@".bright_black(), tags.bright_black())?;
         writeln!(f, "{} {}", "Task:".bright_yellow(), self.name.black())?;
         writeln!(
             f,
@@ -193,7 +220,25 @@ impl TimeTracker {
         false
     }
 
-    pub fn create_task(&mut self, name: &str, tags: &str) -> TimeTrackerResult {
+    // This function prompts the user to select
+    // a task from a list of predefined tasks
+    pub fn get_task_name(&self) -> String {
+        let mut input = String::new();
+        println!("Select a task:");
+
+        // Print the list of predefined tasks from the enum
+        // using the Sequence trait
+        let predefined_tasks = all::<PredefinedTasks>().collect::<Vec<_>>();
+        for (i, task) in predefined_tasks.iter().enumerate() {
+            println!("{}: {}", i + 1, task);
+        }
+        io::stdin().read_line(&mut input).unwrap();
+        let task_number = input.trim().parse::<usize>().unwrap();
+        let task_name = predefined_tasks[task_number - 1].to_string();
+        task_name
+    }
+
+    pub fn create_task(&mut self) -> TimeTrackerResult {
         // Check if there is an active task
         if self.check_if_task_is_active() {
             return TimeTrackerResult::Error(TimeTrackerError::TaskAlreadyActive);
@@ -206,8 +251,8 @@ impl TimeTracker {
         };
 
         let mut task = Task::new();
-        task.name = name.to_string();
-        task.tags = Some(tags.split(',').map(|s| s.to_string()).collect());
+
+        task.name = self.get_task_name();
         task.id = id;
         self.tasks.push(task);
         TimeTrackerResult::Success
