@@ -21,26 +21,28 @@ pub struct Task {
 
 #[derive(Debug, FromPrimitive, Sequence)]
 pub enum PredefinedTasks {
-    Work = 1,
-    Meetings = 2,
-    Reading = 3,
-    Journaling = 4,
-    Code = 5,
+    Meetings = 1,
+    Reading = 2,
+    Journaling = 3,
+    Hobby_Code = 4,
+    Work_Code = 5,
     BrowseInternet = 6,
-    Other = 7,
+    Anki = 7,
+    Other = 8,
 }
 
 // Add String::from to the predefined tasks
 impl std::fmt::Display for PredefinedTasks {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            PredefinedTasks::Work => write!(f, "{}", "Work"),
             PredefinedTasks::Meetings => write!(f, "{}", "Meetings"),
             PredefinedTasks::Reading => write!(f, "{}", "Reading"),
             PredefinedTasks::Journaling => write!(f, "{}", "Journaling"),
-            PredefinedTasks::Code => write!(f, "{}", "Code"),
             PredefinedTasks::BrowseInternet => write!(f, "{}", "Browse Internet"),
             PredefinedTasks::Other => write!(f, "{}", "Other"),
+            PredefinedTasks::Hobby_Code => write!(f, "{}", "Hobby Code"),
+            PredefinedTasks::Work_Code => write!(f, "{}", "Work Code"),
+            PredefinedTasks::Anki => write!(f, "{}", "Anki"),
         }
     }
 }
