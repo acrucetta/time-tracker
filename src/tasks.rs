@@ -124,6 +124,16 @@ impl Task {
         let now = chrono::Local::now();
         self.end_time = Some(now);
         self.duration = now - self.start_time;
+
+        if self.duration.num_minutes() > 120 {
+            print!("The task took a long time; can you confirm the actual duration? (N min): ");
+            let mut confirm = String::new();
+            io::stdin()
+                .read_line(&mut confirm)
+                .expect("Failed to read line");
+            let confirm = confirm.trim().parse::<i64>().unwrap();
+            self.duration = chrono::Duration::minutes(confirm);
+        }
         self.energy = Some(energy);
         self.comments = Some(comment);
     }
@@ -303,7 +313,6 @@ impl TimeTracker {
         // We want to get the last task that has no end time
         // and stop it
         let last_task = self.tasks.last_mut().unwrap();
-
         if last_task.end_time.is_none() {
             let energy = TimeTracker::get_energy_from_user();
             let comment = TimeTracker::get_comment_from_user();
@@ -312,6 +321,17 @@ impl TimeTracker {
         }
 
         TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
+    }
+
+    pub fn remove_task(&mut self, id: u32) -> TimeTrackerResult {
+        // Remove task with id
+        for (i, task) in self.tasks.iter().enumerate() {
+            if task.id == id {
+                self.tasks.remove(i);
+                return TimeTrackerResult::Success;
+            }
+        }
+        TimeTrackerResult::Error(TimeTrackerError::InvalidTaskId)
     }
 
     /// Save all tasks to a csv file
