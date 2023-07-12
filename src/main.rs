@@ -10,7 +10,11 @@ fn main() {
 
     let matches = command!()
         .subcommand_required(true)
-        .subcommand(Command::new("add").about("Start timing a task"))
+        .subcommand(
+            Command::new("add")
+                .about("Start timing a task")
+                .arg(arg!(--tag[TYPE])),
+        )
         .subcommand(Command::new("stop").about("Stop timing a task"))
         .subcommand(Command::new("status").about("Show the current status"))
         .subcommand(Command::new("ls").about("List all tasks"))
@@ -30,10 +34,13 @@ fn main() {
     };
 
     match subcommand {
-        "add" => match time_tracker.create_task() {
-            TimeTrackerResult::Success => print!("Started task!"),
-            TimeTrackerResult::Error(e) => eprintln!("Error: {}", e),
-        },
+        "add" => {
+            if let Some(tag) = sub_m.get_one::<String>("tag") {
+                time_tracker.create_manual_task();
+            } else {
+                time_tracker.create_task();
+            }
+        }
         "stop" => {
             time_tracker.stop_active_task();
         }
