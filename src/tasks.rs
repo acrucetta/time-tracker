@@ -323,7 +323,7 @@ impl TimeTracker {
         TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
     }
 
-    pub fn add_manual_task(&mut self) -> TimeTrackerResult {
+    pub fn create_manual_task(&mut self) -> TimeTrackerResult {
         // Check if there is an active task
         if self.check_if_task_is_active() {
             return TimeTrackerResult::Error(TimeTrackerError::TaskAlreadyActive);
