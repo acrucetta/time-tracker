@@ -1,4 +1,4 @@
-use chrono::{Local, TimeZone};
+use chrono::{Date, DateTime, Duration, Local, NaiveDate, TimeZone, Utc};
 use colored::Colorize;
 use enum_iterator::{all, Sequence};
 use num_derive::FromPrimitive;
@@ -323,15 +323,53 @@ impl TimeTracker {
         TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
     }
 
-    pub fn remove_task(&mut self, id: u32) -> TimeTrackerResult {
-        // Remove task with id
-        for (i, task) in self.tasks.iter().enumerate() {
-            if task.id == id {
-                self.tasks.remove(i);
-                return TimeTrackerResult::Success;
-            }
+    pub fn add_manual_task(&mut self) -> TimeTrackerResult {
+        // Check if there is an active task
+        if self.check_if_task_is_active() {
+            return TimeTrackerResult::Error(TimeTrackerError::TaskAlreadyActive);
         }
-        TimeTrackerResult::Error(TimeTrackerError::InvalidTaskId)
+
+        // Check the last task id
+        let id = match self.tasks.last() {
+            Some(task) => task.id + 1,
+            None => 1,
+        };
+
+        let mut task = Task::new();
+        let task_name = self.get_task_name();
+
+        // Ask the user for the date
+        let mut input = String::new();
+        println!("Enter task date (YYYY-MM-DD): ");
+        io::stdin().read_line(&mut input).unwrap();
+
+        // Parse to DateTime Chrono object
+        let task_date = NaiveDate::parse_from_str(&input.trim(), "%Y-%m-%d").unwrap();
+        let task_date_time = task_date.and_hms_opt(0, 0, 0).unwrap();
+        let task_start_time: chrono::DateTime<chrono::Local> =
+            Local.from_local_datetime(&task_date_time).unwrap();
+
+        // Get task duration
+        let mut input = String::new();
+        println!("Enter task duration in minutes (0-120): ");
+        io::stdin().read_line(&mut input).unwrap();
+        let task_duration = input.trim().parse::<i64>().unwrap();
+
+        // Get task energy
+        let task_energy = TimeTracker::get_energy_from_user();
+
+        // Get task comment
+        let task_comment = TimeTracker::get_comment_from_user();
+
+        task.name = task_name;
+        task.id = id;
+        task.duration = Duration::minutes(task_duration);
+        task.start_time = task_start_time;
+        task.end_time = Some(task_start_time + Duration::minutes(task_duration));
+        task.energy = Some(task_energy);
+        task.comments = Some(task_comment);
+        self.tasks.push(task);
+        TimeTrackerResult::Success
     }
 
     /// Save all tasks to a csv file
