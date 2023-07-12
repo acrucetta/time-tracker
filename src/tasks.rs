@@ -301,26 +301,17 @@ impl TimeTracker {
 
     pub fn stop_active_task(&mut self) -> TimeTrackerResult {
         // We want to get the last task that has no end time
-        for task in self.tasks.iter_mut().rev() {
-            if task.end_time.is_none() {
-                let energy = TimeTracker::get_energy_from_user();
-                let comment = TimeTracker::get_comment_from_user();
-                task.end_task(energy, comment);
-                return TimeTrackerResult::Success;
-            }
-        }
-        TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
-    }
+        // and stop it
+        let last_task = self.tasks.last_mut().unwrap();
 
-    pub fn remove_task(&mut self, id: u32) -> TimeTrackerResult {
-        // Remove task with id
-        for (i, task) in self.tasks.iter().enumerate() {
-            if task.id == id {
-                self.tasks.remove(i);
-                return TimeTrackerResult::Success;
-            }
+        if last_task.end_time.is_none() {
+            let energy = TimeTracker::get_energy_from_user();
+            let comment = TimeTracker::get_comment_from_user();
+            last_task.end_task(energy, comment);
+            return TimeTrackerResult::Success;
         }
-        TimeTrackerResult::Error(TimeTrackerError::InvalidTaskId)
+
+        TimeTrackerResult::Error(TimeTrackerError::NoActiveTasks)
     }
 
     /// Save all tasks to a csv file
