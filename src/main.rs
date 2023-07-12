@@ -13,7 +13,7 @@ fn main() {
         .subcommand(
             Command::new("add")
                 .about("Start timing a task")
-                .arg(arg!(--tag[TYPE])),
+                .arg(arg!(--type[TYPE])),
         )
         .subcommand(Command::new("stop").about("Stop timing a task"))
         .subcommand(Command::new("status").about("Show the current status"))
@@ -35,7 +35,7 @@ fn main() {
 
     match subcommand {
         "add" => {
-            if let Some(tag) = sub_m.get_one::<String>("tag") {
+            if let Some(tag) = sub_m.get_one::<String>("type") {
                 time_tracker.create_manual_task();
             } else {
                 time_tracker.create_task();
