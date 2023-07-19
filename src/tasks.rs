@@ -126,11 +126,13 @@ impl Task {
         self.duration = now - self.start_time;
 
         if self.duration.num_minutes() > 120 {
-            print!("The task took a long time; can you confirm the actual duration? (N min): ");
+            println!("The task took a long time; can you confirm the actual duration? (N min): ");
             let mut confirm = String::new();
-            io::stdin()
-                .read_line(&mut confirm)
-                .expect("Failed to read line");
+            match io::stdin()
+                .read_line(&mut confirm) {
+                Ok(_) => {},
+                Err(_) => confirm = String::from("60")
+                }
             let confirm = confirm.trim().parse::<i64>().unwrap();
             self.duration = chrono::Duration::minutes(confirm);
         }
@@ -293,9 +295,11 @@ impl TimeTracker {
         // Get energy from user
         let mut energy = String::new();
         println!("How much life energy did this task give you? (1-10): ");
-        io::stdin()
-            .read_line(&mut energy)
-            .expect("Failed to read line");
+        match io::stdin()
+            .read_line(&mut energy) {
+            Ok(_) => {},
+            Err(_) => energy = String::from("0")
+            };
         let energy: i8 = energy.trim().parse().expect("Please type a number!");
         energy
     }
@@ -303,9 +307,11 @@ impl TimeTracker {
     fn get_comment_from_user() -> String {
         let mut comment = String::new();
         println!("How did the task go?: ");
-        io::stdin()
-            .read_line(&mut comment)
-            .expect("Failed to write comment");
+        match io::stdin()
+            .read_line(&mut comment) {
+            Ok(_) => {},
+            Err(_) => comment = String::from("")
+            };
         comment
     }
 
